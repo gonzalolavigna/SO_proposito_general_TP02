@@ -39,12 +39,15 @@ void exit_function (process_variables_t * process_status);
 pthread_mutex_t mutexData_receive_serial = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexData_process_status = PTHREAD_MUTEX_INITIALIZER;
 
+
+//Handler para la signa del SO, Ctrl+C.
 void sigint_handler (int sig){
 	write(1,"SIGINT recibida finalizando proceso\n",37);
 	exit_function(&serial_manager_status);
 	exit(2);
 }
 
+//Handler para la signa del SO, SIGPIPE cuando se rompe un pipe.
 void sigpipe_handler (int sig){
     write(1,"SIGPIPE recibida finalizando proceso\n",38);
     exit_function(&serial_manager_status);
