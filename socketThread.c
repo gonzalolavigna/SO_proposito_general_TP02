@@ -31,6 +31,20 @@ extern pthread_mutex_t mutexData_process_status ;
 int write_string_to_socket (int fd);
 void read_string_from_socket (int fd);
 
+//Este thread se encarga de manejar el socket realizando todas las verificaciones correspondientes.
+//TODO: Eliminar magic number.
+//Levanta el socket y con el primer accept se queda enganchado esperando que por la cola de mensajes entre un ID
+//Una vez recibido el ID por la cola de mensaje lo envia por el socket.
+//Si el envio falla por alguna razon se activan las acciones para finalizar el proceso.
+//Si el envio por el socket del ID sale bien, queda bloqueado en el read esperando el mensaje de comandol.
+//Recibido lo verifica y si es correcto vuelve a iniciar el loop esperando un ID.
+//Si falla la recepcion se activan los mecanismos para cerrar el proceso de forma controlada.
+//Tambien se implementa un watchdog simple por thread para evitar que el read bloqueante trabe el sistema.
+//Eso se debe que para parar el main.py no sirve el ctrl+c sino el ctrl+z que hace un stop, lo cual no deveuvlve EOF
+//En dicho caso un watchdog de 5 segundo verifica quye se haya salido de esta condicion.
+//Si esto no ssucedio se activan los mecanismo para apagar el proceso de forma controlada.
+//El while despues del accept lo hace cada 0.5 segundo, esto es un criterio de diseño para todos los threads.
+//Ya que de apretar botones de la EDU CIAA se saca que no es posible hacerlo mas rapido que 1 segundo.
 
 void* socket_tcp_server (void * socket_thread_parameter){
 	socklen_t addr_len;
@@ -87,6 +101,11 @@ void* socket_tcp_server (void * socket_thread_parameter){
 				FOREVER_LOOP
 	    	}
     		printf  ("SOCKET: conexion desde:  %s\n", inet_ntoa(clientaddr.sin_addr));
+    		//Cuando tengo el primer accept por criterio se limpia toda la cola, ya que no pueden
+    		//tomarse en cuenta acceso viejo, esto no se hace en otra funcion, porque en otra aplicacion
+    		//puede ser util saber si hay mensajes relevante. Como es un contro lde acceso todo lo que haya antes de conectarse
+    		//con el cliente no es de interes, sol ose guarda por futuras aplicaciones.
+    		cd_init(receive_queue,RECEIVE_QUEUE_LENGTH);
     		while (1){
     			pthread_mutex_lock(&mutexData_receive_serial);
     			if (write_string_to_socket(newfd)== 0){
@@ -98,7 +117,10 @@ void* socket_tcp_server (void * socket_thread_parameter){
 	}
 }
 
-
+//Esta funcion escribre un mensaje recibido por la cola
+//Si los datos estaqn incorrectos se apaga el proceso de forma controlada.
+//Devuelve 0 si se envio correctamente, para que la funcion jerarquicamente superior espere la lectura del comando.
+//Devuelve -1 si no se envio nada ya que no se recibio nada para enviar. Esto sirve para el loop de la instancia superior
 int write_string_to_socket (int fd){
 	int index_received_message_queu;
 	int size_received_message_queu;
@@ -123,6 +145,13 @@ int write_string_to_socket (int fd){
 	}
 return return_flag;
 }
+
+//Este read leeer a traves del socket, verifica si se recibe EOF o un error en la recepcion, en dicho caso apaga el proceso de
+//manera controlada.
+//Taambien activa un watchdog al entrar al reada, ya que si no se recibe en un tiempo prudencial puedo ahaberse producido un stop
+//en el cliente de python. EN dicho el thread del watchdog desactiva el proceso de manera controlada.
+//No se hace control por string del comando ya que com oes dentro de la PC la comunicacion no se espera ruido electrico.
+//Luego escribe el comando por la cola, para que sea enviado por el sender.
 
 void read_string_from_socket (int fd){
 	char buffer[128];

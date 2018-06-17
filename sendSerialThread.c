@@ -37,6 +37,8 @@ extern pthread_mutex_t mutexData_process_status ;
 //Cuando lo recibe lo envia a traves del puerto serie
 //A continuacion queda a la espera de recibir el OK, en dicho caso indica transaccion completa.
 //Vuelve al estado inicial WAIT_CMD en el que espera un comando por la cola de mensajes.
+//Si en el estado WAIT OK no se recibe el OK por la cola de mensajes en 5 segundo el sistema activa para salir de
+//manera controlada.
 
 void* send_console_interface (void * console_number_void){
 	int console_number = *((int*) console_number_void);
@@ -66,6 +68,9 @@ void* send_console_interface (void * console_number_void){
 
 }
 
+//Esta funcion verifica que se haya recibido un okey, en caso positivo return un 0 para que el thread active la espera del OK.
+//No se ve3rifica la veracidad del string ya que es verificado en instancias superiores del sistema, esto solo lo pasa.
+
 int wait_command (void){
 	int command_index;
 	int command_send_size;
@@ -87,6 +92,11 @@ int wait_command (void){
 	pthread_mutex_unlock(&mutexData_receive_serial);
 	return -1;
 }
+
+
+//Por protocolo cada vez que se envia un comando a la palca se recibe un OK.
+//Con lo cual si no se recibe el OK se sale de la funcion y se indica al sistema para finalizar.
+//El OK se espera por la cola de mensajes.
 
 int wait_response (void){
 	int respond_index;
