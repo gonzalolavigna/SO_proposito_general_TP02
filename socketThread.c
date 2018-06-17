@@ -18,6 +18,7 @@
 
 #include "MessageQueue.h"
 #include "socketThread.h"
+#include "watchdogThread.h"
 #include "main.h"
 
 
@@ -25,6 +26,7 @@ extern Message_Queu_t receive_queue [RECEIVE_QUEUE_LENGTH];
 extern process_variables_t serial_manager_status;
 extern pthread_mutex_t mutexData_receive_serial;
 extern pthread_mutex_t mutexData_process_status ;
+
 
 int write_string_to_socket (int fd);
 void read_string_from_socket (int fd);
@@ -107,6 +109,7 @@ int write_string_to_socket (int fd){
 		size_received_message_queu = cd_read_message_qeue(receive_queue,MESSAGE_TYPE_ID,buffer,index_received_message_queu);
 		pthread_mutex_unlock(&mutexData_receive_serial);
 		buffer[size_received_message_queu]='\0';
+
 		if(write(fd,buffer,size_received_message_queu) == -1){
 			printf("SOCKET:ERROR en write del socket\r\n");
 			pthread_mutex_lock(&mutexData_process_status);
@@ -114,6 +117,7 @@ int write_string_to_socket (int fd){
 			pthread_mutex_unlock(&mutexData_process_status);
 			FOREVER_LOOP
 		}
+
 		printf("SOCKET:Se envio al cliente %d bytes el mensaje %s",size_received_message_queu,buffer);
 		return_flag = 0;
 	}
@@ -124,7 +128,9 @@ void read_string_from_socket (int fd){
 	char buffer[128];
 	int n;
 	int index_send_message_queu;
+	pthread_t watchdog_socket;
 
+	pthread_create(&watchdog_socket,NULL,watchdog_socket_tcp,NULL);
 	if ((n = read(fd,buffer,128))== -1){
 		printf("SOCKET:ERROR en read del socket\r\n");
 		pthread_mutex_lock(&mutexData_process_status);
@@ -132,6 +138,8 @@ void read_string_from_socket (int fd){
 		pthread_mutex_unlock(&mutexData_process_status);
 		FOREVER_LOOP
 	}
+	watchdog_socket_tcp_disabled();
+
 	if (n == 0){
 		printf("SOCKET:ERROR en read del socket se recibieron 0 bytes EOF\r\n");
 		pthread_mutex_lock(&mutexData_process_status);
@@ -139,9 +147,10 @@ void read_string_from_socket (int fd){
 		pthread_mutex_unlock(&mutexData_process_status);
 		FOREVER_LOOP
 	}
-		buffer[n]='\0';
-		printf("SOCKET:Se recibio del cliente %d bytes el mensaje %s",n,buffer);
-		pthread_mutex_lock(&mutexData_receive_serial);
+
+	buffer[n]='\0';
+	printf("SOCKET:Se recibio del cliente %d bytes el mensaje %s",n,buffer);
+	pthread_mutex_lock(&mutexData_receive_serial);
 	if((index_send_message_queu = cd_getFreeIndex(receive_queue,RECEIVE_QUEUE_LENGTH)) == -1){
 		printf("SOCKET:COLA de mensajes llena\r\n");
 		pthread_mutex_lock(&mutexData_process_status);

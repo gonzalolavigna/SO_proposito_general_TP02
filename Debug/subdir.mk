@@ -10,7 +10,8 @@ C_SRCS += \
 ../receiveSerialThread.c \
 ../rs232.c \
 ../sendSerialThread.c \
-../socketThread.c 
+../socketThread.c \
+../watchdogThread.c 
 
 OBJS += \
 ./MessageQueue.o \
@@ -19,7 +20,8 @@ OBJS += \
 ./receiveSerialThread.o \
 ./rs232.o \
 ./sendSerialThread.o \
-./socketThread.o 
+./socketThread.o \
+./watchdogThread.o 
 
 C_DEPS += \
 ./MessageQueue.d \
@@ -28,7 +30,8 @@ C_DEPS += \
 ./receiveSerialThread.d \
 ./rs232.d \
 ./sendSerialThread.d \
-./socketThread.d 
+./socketThread.d \
+./watchdogThread.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

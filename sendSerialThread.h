@@ -1,4 +1,3 @@
-#define MAX_RETRIES 100
 #define WAIT_CMD	0
 #define WAIT_OK		1
 
