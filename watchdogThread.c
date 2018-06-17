@@ -23,21 +23,26 @@
 int watchdog_enable;
 //Como los script http de python se paran con ctrl+z las funciones no devuelven error de read y write, por lo tanto se implemente un thread de watchdog
 pthread_mutex_t mutexData_watchsocket = PTHREAD_MUTEX_INITIALIZER;
+
+//Extern para el mutex del estado del proceso, este thread marca el status del socket y  lo para si expiro
 extern pthread_mutex_t mutexData_process_status ;
 extern process_variables_t serial_manager_status;
 
+//Funcion para habilitar el watchdog
 void watchdog_socket_tcp_enable (void){
 	pthread_mutex_lock(&mutexData_watchsocket);
 	watchdog_enable = WATCHDOG_ENABLE;
 	pthread_mutex_unlock(&mutexData_watchsocket);
 }
 
+//Funcion para ser llamada desde afuera para que la funcion usuario los deshabilita
 void watchdog_socket_tcp_disabled (void){
 	pthread_mutex_lock(&mutexData_watchsocket);
 	watchdog_enable = WATCHDOG_DISABLED;
 	pthread_mutex_unlock(&mutexData_watchsocket);
 }
 
+//Funcion para obtener el estado del watchdog manejando los mutex
 int get_watchdog_socket_tcp_status (void){
 	int temp;
 
@@ -47,7 +52,9 @@ int get_watchdog_socket_tcp_status (void){
 	return temp;
 }
 
-
+//Funcion principal de este thread, que habilita el watchdog quedando a la espera de que finalice el sleep fijo en esta implementacion
+//Si no tenemos el disabled en el watchdog se finaloiza el proceso mandando el mensaje correspondiente para que lo atiene el
+//thread principal.
 void* watchdog_socket_tcp (void * socket_thread_parameter){
 		pthread_mutex_lock(&mutexData_watchsocket);
 		watchdog_enable = WATCHDOG_ENABLE;
@@ -64,4 +71,5 @@ void* watchdog_socket_tcp (void * socket_thread_parameter){
 			printf("WATCHDOG READ TCP: Timeout expiro comunicación en el cliente\n");
 			FOREVER_LOOP
 		}
+		return NULL;
 }

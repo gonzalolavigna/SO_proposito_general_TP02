@@ -22,6 +22,8 @@
 
 #define RECEIVER_MESSAGE_LENGTH 10
 
+
+//Extern de la cola mutex y la estructura de datos principal del proceso
 extern Message_Queu_t receive_queue [RECEIVE_QUEUE_LENGTH];
 extern process_variables_t serial_manager_status;
 extern pthread_mutex_t mutexData_receive_serial;
@@ -30,6 +32,12 @@ extern pthread_mutex_t mutexData_process_status ;
 
 static void check_receiver_message (int receiver_serial_n_char,char * receiver_serial_buffer_receiver);
 static int write_serial_queue (char * message_to_transfer, int message_type, int size);
+
+//Funcion que recibe datos del puerto serie.
+//Esta funcion hace un loop infinito esperando que se reciban los datos.
+//Esta funcion tiene un sleep de 500 mseg ya que no se espera tanto trafico de datos.
+//Le damos mas espcio asi al SO para que haga cosas.
+//Si hubo un error en la recepcion se sale enviando a la estructura de datos de control que hubo un error
 
 void* console_interface (void * console_number_void){
 	char 	receiver_serial_buffer_receiver[BUFFER_SIZE];
@@ -50,9 +58,18 @@ void* console_interface (void * console_number_void){
 			FOREVER_LOOP
 		}
 		check_receiver_message(receiver_serial_n_char,receiver_serial_buffer_receiver);
+		usleep(500000);
 	}
 }
 
+//Esta funion verifica que se haya recibido un mensaje.
+//Como la funcion es no bloqueante es necesario llamarla de una instancia superior.
+//Es muy probable no recibir bytes por lo tanto si no se recibe nada se sale,
+//Si se reciben datos se busca concatenar hasta encontrar el principio de un mensaje ">"
+//Se parsean los commando verificando su integridad, y de ser asi se escriben en la cola de mensajes , para que sean
+//enviado por el socket tcp
+//TODO: Test unitarios sobre el bloque ya que solo se proban los casos de datos completos.
+//TODO: Mejorar implementacion teniendo en cuenta un buffer circular.
 
 static void check_receiver_message (int receiver_serial_n_char,char * receiver_serial_buffer_receiver) {
 
@@ -110,7 +127,8 @@ if (acc_receiver_serial_n_char == 0){
 }
 
 }
-
+//Funcion que escribe un mensaje en la cola de mensaje.
+//Si hay un error se devuelve un error indicando cola llena.
 static int write_serial_queue (char * message_to_transfer, int message_type, int size){
 	int index;
 	pthread_mutex_lock(&mutexData_receive_serial);
