@@ -1,6 +1,7 @@
 #include "MessageQueue.h"
 #include <string.h>
 
+//Esta serie de funciones para manejar la cola.
 void cd_init(Message_Queu_t* clients, int len)
 {
 	int i;
