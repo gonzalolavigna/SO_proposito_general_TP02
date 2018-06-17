@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 	struct sigaction sa_1;
 	struct sigaction sa_2;
 
-	printf("SERIAL SEVICE:Inicio Serial Service\r\n");
+	printf("MAIN:Inicio Serial Service\r\n");
 
 	//Se inicializan las variables de estado de los threads que se van a crer.
 	serial_manager_status.process_status = WAIT_INIT ;
@@ -97,14 +97,14 @@ int main(int argc, char **argv)
     sa_1.sa_flags = 0;
     sigemptyset(&sa_1.sa_mask);
     if(sigaction(SIGINT,&sa_1,NULL) == -1){
-        printf("ERROR configurando SIGINT\n");
+        printf("MAIN:ERROR configurando SIGINT\n");
         return 1;
     }
     sa_2.sa_handler = sigpipe_handler;
     sa_2.sa_flags = 0;
     sigemptyset(&sa_2.sa_mask);
     if(sigaction(SIGPIPE,&sa_2,NULL) == -1){
-        printf("ERROR configurando SIGPIPE\n");
+        printf("MAIN:ERROR configurando SIGPIPE\n");
         exit(1);
     }
 
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 //TODO: Cambiar valor de retorno por  0 a un flag
 int parse_argument (int argc){
 	if (argc != 2){
-		printf("SERIAL SEVICE ERROR: Numero Incorrecto de parametros, solo se acepta 1\r\n");
+		printf("MAIN: Numero Incorrecto de parametros, solo se acepta 1\r\n");
 		return -1;
 	}
 	return 0;
@@ -173,26 +173,26 @@ int serial_com_init (char * console_argument){
 	int console_number;
 
 	if(strlen(console_argument) > 2 || strlen(console_argument) < 1){
-		printf("SERIAL SEVICE ERROR: Caracteres Parametros de consola > a 2\r\n");
+		printf("MAIN: Caracteres Parametros de consola > a 2\r\n");
 		return -1;
 	}
 
 
 	if(!isdigit(console_argument[0])  && !isdigit(console_argument[1])){
-		printf("SERIAL SEVICE ERROR: Consola no es un numero\r\n");
+		printf("MAIN: Consola no es un numero\r\n");
 		return -1;
 	}
 	console_number = strtol(console_argument,NULL,10);
 
 	if (console_number > 21 && console_number < 0){
-		printf("SERIAL SERVICE ERROR: Consola Elegida %d fuera de rango\r\n",console_number);
+		printf("MAIN: Consola Elegida %d fuera de rango\r\n",console_number);
 		return -1;
 	}
 	if(serial_open(console_number,BAUD_RATE) != 0){
-		printf("SERIAL SERVICE ERROR: Error Opening Console %d a un BAUD RATE de %d\r\n",console_number,BAUD_RATE);
+		printf("MAIN: Error Opening Console %d a un BAUD RATE de %d\r\n",console_number,BAUD_RATE);
 		return -1;
 	}
-	printf("SERIAL SEVICE SUCCESS: Inicializando Puerto Serie TTYUSB%d BAUD RATE:%d\r\n\n\n",console_number,BAUD_RATE);
+	printf("MAIN:Inicializando Puerto Serie /dev/ttyUSB%d BAUD RATE:%d\r\n\n\n",console_number,BAUD_RATE);
 	return console_number;
 }
 
